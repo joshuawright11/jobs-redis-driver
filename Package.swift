@@ -14,13 +14,13 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0-rc"),
-        .package(url: "https://github.com/joshuawright11/jobs.git", .branch("master")),
+        .package(url: "https://github.com/vapor/queues.git", from: "1.0.0-rc"),
         .package(url: "https://github.com/vapor/redis-kit.git", from: "1.0.0-beta"),
     ],
     targets: [
         .target(
             name: "JobsRedisDriver",
-            dependencies: ["Jobs", "RedisKit"]
+            dependencies: ["Queues", "RedisKit"]
         ),
         .testTarget(
             name: "JobsRedisDriverTests",

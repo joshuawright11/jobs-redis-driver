@@ -62,6 +62,10 @@ struct _JobsRedisQueue {
 }
 
 extension _JobsRedisQueue: RedisClient {
+    var isConnected: Bool {
+        self.client.isConnected
+    }
+    
     func send(command: String, with arguments: [RESPValue]) -> EventLoopFuture<RESPValue> {
         self.client.send(command: command, with: arguments)
     }
@@ -93,18 +97,18 @@ extension _JobsRedisQueue: Queue {
     }
     
     func clear(_ id: JobIdentifier) -> EventLoopFuture<Void> {
-        self.lrem(id.string, from: self.processingKey).flatMap { _ in
-            self.client.delete(id.key)
+        self.lrem(id.string, from: RedisKey(self.processingKey)).flatMap { _ in
+            self.client.delete(RedisKey(id.key))
         }.map { _ in }
     }
     
     func push(_ id: JobIdentifier) -> EventLoopFuture<Void> {
-        self.client.lpush(id.string, into: self.key)
+        self.client.lpush(id.string, into: RedisKey(self.key))
             .map { _ in }
     }
     
     func pop() -> EventLoopFuture<JobIdentifier?> {
-        self.client.rpoplpush(from: self.key, to: self.processingKey).flatMapThrowing { redisData in
+        self.client.rpoplpush(from: RedisKey(self.key), to: RedisKey(self.processingKey)).flatMapThrowing { redisData in
             guard !redisData.isNull else {
                 return nil
             }

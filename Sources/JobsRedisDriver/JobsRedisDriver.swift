@@ -1,4 +1,4 @@
-import Jobs
+import Queues
 import RedisKit
 import NIO
 import Foundation
@@ -8,7 +8,7 @@ struct InvalidRedisURL: Error {
     let url: String
 }
 
-extension Application.Jobs.Provider {
+extension Application.Queues.Provider {
     public static func redis(url string: String) throws -> Self {
         guard let url = URL(string: string) else {
             throw InvalidRedisURL(url: string)
@@ -25,7 +25,7 @@ extension Application.Jobs.Provider {
     
     public static func redis(_ configuration: RedisConfiguration) -> Self {
         .init {
-            $0.jobs.use(custom: JobsRedisDriver(configuration: configuration, on: $0.eventLoopGroup))
+            $0.queues.use(custom: JobsRedisDriver(configuration: configuration, on: $0.eventLoopGroup))
         }
     }
 }
@@ -47,8 +47,8 @@ public struct JobsRedisDriver {
     }
 }
 
-extension JobsRedisDriver: JobsDriver {
-    public func makeQueue(with context: JobContext) -> JobsQueue {
+extension JobsRedisDriver: QueuesDriver {
+    public func makeQueue(with context: QueueContext) -> Queue {
         _JobsRedisQueue(
             client: pool.pool(for: context.eventLoop).client(),
             context: context
@@ -58,7 +58,7 @@ extension JobsRedisDriver: JobsDriver {
 
 struct _JobsRedisQueue {
     let client: RedisClient
-    let context: JobContext
+    let context: QueueContext
 }
 
 extension _JobsRedisQueue: RedisClient {
@@ -82,7 +82,7 @@ extension JobIdentifier {
     }
 }
 
-extension _JobsRedisQueue: JobsQueue {
+extension _JobsRedisQueue: Queue {
     func get(_ id: JobIdentifier) -> EventLoopFuture<JobData> {
         self.client.get(id.key, asJSON: JobData.self)
             .unwrap(or: _JobsRedisError.missingJob)
